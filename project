@@ -1,0 +1,726 @@
+import React, { useState } from "react";
+import axios from "axios";
+
+function App() {
+    const [formName, setFormName] = useState("");
+    const [environment, setEnvironment] = useState("DEV");
+    const [franchise, setFranchise] = useState("RB");
+    const [journey, setJourney] = useState("nonAUTH");
+    const [component, setComponent] = useState("forms-editor-ui");
+    const [brand, setBrand] = useState("a");
+    const [generatedUrl, setGeneratedUrl] = useState("");
+    const [copyStatus, setCopyStatus] = useState("Copy URL");
+    const [copyStatusColor, setCopyStatusColor] = useState("lightblue");
+
+    // const handleGenerate = async () => {
+    //     if (!formName && component !== "forms-editor-ui") {
+    //         alert("Please enter the form name.");
+    //         return;
+    //     }
+
+    //     let url = "";
+
+    //     const lowerCaseEnvironment = environment.toLowerCase();
+    //     const lowerCaseFranchise = franchise.toLowerCase();
+
+    //     if (journey === "nonAUTH") {
+    //         // Non-AUTH Journey: use the same logic for generating the URL
+    //         if (component === "forms-editor-ui") {
+    //             if (formName) {
+    //                 url = `https://eformseditor-${lowerCaseFranchise}.nwb.${lowerCaseEnvironment}.spa.paas.pnf.banksvcs.net/#/form/${formName}`;
+    //             } else {
+    //                 url = `https://eformseditor-${lowerCaseFranchise}.nwb.${lowerCaseEnvironment}.spa.paas.pnf.banksvcs.net/#/forms`;
+    //             }
+    //         } else if (component === "forms-runtime-ui") {
+    //             url = `https://eforms-${lowerCaseFranchise}.nwb.${lowerCaseEnvironment}.spa.paas.pnf.banksvcs.net/#/form/${formName}`;
+    //         } else if (component === "external-runtime-ui") {
+    //             url = `https://eforms-external-${lowerCaseFranchise}-${lowerCaseEnvironment}.${brand}/#/form/${formName}`;
+    //         }
+    //       } else if (journey === "AUTH") {
+    //         // AUTH Journey: Make an API call to generate URL with token
+    //         try {
+    //             const response = await axios.post("http://localhost:8080/api/v1/url-generator/generate-auth-token", {
+    //                 brand: brand,  // Only sending brand as per the updated request DTO
+    //             });
+    //             const { authToken } = response.data;  // Extract authToken from response
+    
+    //             // Construct the URL based on the component type
+    //             if (component === "forms-runtime-ui") {
+    //                 url = `https://eforms-${lowerCaseFranchise}.nwb.${lowerCaseEnvironment}.spa.paas.pnf.banksvcs.net/?mtoken=${authToken}#/form`;
+    //             } else if (component === "external-runtime-ui") {
+    //                 url = `https://eforms-external-${lowerCaseFranchise}-${lowerCaseEnvironment}.${brand}/?mtoken=${authToken}#/form`;
+    //             }
+    
+    //             setGeneratedUrl(url);  // Set the generated URL with authToken
+    //         } catch (error) {
+    //             console.error("Error generating auth URL", error);
+    //             alert("Failed to generate auth URL.");
+    //         }
+    //     }
+
+    //     // If the journey is nonAUTH, the URL is set directly here
+    //     if (journey === "nonAUTH" && !generatedUrl) {
+    //         setGeneratedUrl(url);
+    //     }
+    // };
+    const handleGenerate = async () => {
+      // Reset generatedUrl when switching between journeys to avoid conflicts
+      setGeneratedUrl("");  // Clear any previous generated URL
+  
+      if (!formName && component !== "forms-editor-ui") {
+          alert("Please enter the form name.");
+          return;
+      }
+  
+      let url = "";
+      const lowerCaseEnvironment = environment.toLowerCase();
+      const lowerCaseFranchise = franchise.toLowerCase();
+  
+      if (journey === "nonAUTH") {
+          // Non-AUTH Journey: generate the URL based on the selected component
+          if (component === "forms-editor-ui") {
+              if (formName) {
+                  url = `https://eformseditor-${lowerCaseFranchise}.nwb.${lowerCaseEnvironment}.spa.paas.pnf.banksvcs.net/#/form/${formName}`;
+              } else {
+                  url = `https://eformseditor-${lowerCaseFranchise}.nwb.${lowerCaseEnvironment}.spa.paas.pnf.banksvcs.net/#/forms`;
+              }
+          } else if (component === "forms-runtime-ui") {
+              url = `https://eforms-${lowerCaseFranchise}.nwb.${lowerCaseEnvironment}.spa.paas.pnf.banksvcs.net/#/form/${formName}`;
+          } else if (component === "external-runtime-ui") {
+              url = `https://eforms-external-${lowerCaseFranchise}-${lowerCaseEnvironment}.${brand}/#/form/${formName}`;
+          }
+  
+          // Set the generated URL for nonAUTH journey
+          setGeneratedUrl(url);
+  
+      } else if (journey === "AUTH") {
+          // AUTH Journey: Make an API call to generate URL with authToken
+          try {
+              const response = await axios.post("http://localhost:8080/api/v1/url-generator/generate-auth-token", {
+                  brand: brand,  // Only sending brand as per the updated request DTO
+              });
+              const { authToken } = response.data;  // Extract authToken from response
+  
+              // Construct the URL based on the component type
+              if (component === "forms-runtime-ui") {
+                  url = `https://eforms-${lowerCaseFranchise}.nwb.${lowerCaseEnvironment}.spa.paas.pnf.banksvcs.net/?mtoken=${authToken}#/form/${formName}`;
+              } else if (component === "external-runtime-ui") {
+                  url = `https://eforms-external-${lowerCaseFranchise}-${lowerCaseEnvironment}.${brand}/?mtoken=${authToken}#/form/${formName}`;
+              }
+  
+              // Set the generated URL for AUTH journey
+              setGeneratedUrl(url);
+          } catch (error) {
+              console.error("Error generating auth URL", error);
+              alert("Failed to generate auth URL.");
+          }
+      }
+  };
+  
+    const handleCopy = () => {
+        if (generatedUrl) {
+            navigator.clipboard.writeText(generatedUrl);
+            setCopyStatus("Copied!");
+            setCopyStatusColor("green");
+            setTimeout(() => {
+                setCopyStatus("Copy URL");
+                setCopyStatusColor("lightblue");  // Reset to lightblue after 2 seconds
+            }, 2000);
+        } else {
+            alert("No URL to copy!");
+        }
+    };
+
+    return (
+        <div style={{ margin: "20px", fontFamily: "Arial, sans-serif" }}>
+            <h1 style={{ textAlign: "center" }}>URL Generator</h1>
+
+            <div style={styles.section}>
+                <label style={styles.label}>Form Name:</label>
+                <input
+                    type="text"
+                    value={formName}
+                    onChange={(e) => setFormName(e.target.value)}
+                    style={styles.input}
+                />
+            </div>
+
+            <div style={styles.section}>
+                <div style={styles.row}>
+                    <div style={styles.column}>
+                        <label style={styles.label}>Environment:</label>
+                        <select
+                            value={environment}
+                            onChange={(e) => setEnvironment(e.target.value)}
+                            style={styles.select}
+                        >
+                            {["DEV", "SIT", "NFT", "UAT", "PROD"].map((env) => (
+                                <option key={env} value={env}>
+                                    {env}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <div style={styles.column}>
+                        <label style={styles.label}>Franchise:</label>
+                        <select
+                            value={franchise}
+                            onChange={(e) => setFranchise(e.target.value)}
+                            style={styles.select}
+                        >
+                            {["RB", "SS", "CB", "EE"].map((fr) => (
+                                <option key={fr} value={fr}>
+                                    {fr}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <div style={styles.column}>
+                        <label style={styles.label}>Brand:</label>
+                        <select
+                            value={brand}
+                            onChange={(e) => setBrand(e.target.value)}
+                            style={styles.select}
+                        >
+                            {["a", "b", "c", "d"].map((br) => (
+                                <option key={br} value={br}>
+                                    {br}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div style={styles.section}>
+                <div style={styles.row}>
+                    <div style={styles.column}>
+                        <label style={styles.label}>Component:</label>
+                        <select
+                            value={component}
+                            onChange={(e) => setComponent(e.target.value)}
+                            style={styles.select}
+                        >
+                            {["forms-editor-ui", "forms-runtime-ui", "external-runtime-ui"].map((comp) => (
+                                <option key={comp} value={comp}>
+                                    {comp}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <div style={styles.column}>
+                        <label style={styles.label}>Journey:</label>
+                        <select
+                            value={journey}
+                            onChange={(e) => setJourney(e.target.value)}
+                            style={styles.select}
+                        >
+                            {["AUTH", "nonAUTH"].map((jr) => (
+                                <option key={jr} value={jr}>
+                                    {jr}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div style={styles.section}>
+                <button
+                    onClick={handleGenerate}
+                    style={styles.button}
+                >
+                    Generate URL
+                </button>
+            </div>
+
+            {generatedUrl && (
+                <div style={styles.resultSection}>
+                    <h3 style={styles.generatedUrlText}>Generated URL:</h3>
+                    <input
+                        type="text"
+                        value={generatedUrl}
+                        readOnly
+                        style={styles.resultInput}
+                    />
+                    <button
+                        onClick={handleCopy}
+                        style={{
+                            ...styles.copyButton,
+                            backgroundColor: copyStatusColor === "green" ? "green" : "#007BFF", // Light blue background when not clicked
+                            color: "white",
+                        }}
+                    >
+                        {copyStatus}
+                    </button>
+                </div>
+            )}
+        </div>
+    );
+}
+
+const styles = {
+    section: {
+        marginBottom: "20px",
+    },
+    row: {
+        display: "flex",
+        justifyContent: "space-between",
+        gap: "10px", // Add space between columns to keep them aligned
+    },
+    column: {
+        flex: 1,
+    },
+    label: {
+        fontWeight: "bold",
+        marginBottom: "5px",
+        display: "block",
+    },
+    input: {
+        width: "100%", // Ensure full width for all inputs
+        padding: "8px",
+        fontSize: "14px",
+        border: "1px solid #ccc",
+        borderRadius: "4px",
+        boxSizing: "border-box", // Ensure padding does not increase width
+    },
+    select: {
+        width: "100%",
+        padding: "8px",
+        fontSize: "14px",
+        border: "1px solid #ccc",
+        borderRadius: "4px",
+        boxSizing: "border-box", // Ensure padding does not increase width
+    },
+    button: {
+        padding: "10px 20px",
+        backgroundColor: "#007BFF",
+        color: "white",
+        border: "none",
+        borderRadius: "4px",
+        cursor: "pointer",
+        width: "100%",
+        fontSize: "16px",
+    },
+    resultSection: {
+        marginTop: "20px",
+    },
+    generatedUrlText: {
+        fontSize: "14px", // Slightly smaller font for the result text
+        fontWeight: "bold",
+    },
+    resultInput: {
+        width: "100%",
+        padding: "8px",
+        fontSize: "14px",
+        border: "1px solid #ccc",
+        borderRadius: "4px",
+        marginBottom: "10px",
+    },
+    copyButton: {
+        padding: "10px 20px",
+        fontSize: "14px",
+        cursor: "pointer",
+        border: "none",
+        borderRadius: "4px",
+        width: "100%",
+    },
+};
+
+export default App;
+
+//Backend
+//MAin:
+
+package com.eforms_url_generator.eforms_url_generator;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+@SpringBootApplication
+public class EformsUrlGeneratorApplication {
+
+	public static void main(String[] args) {
+		SpringApplication.run(EformsUrlGeneratorApplication.class, args);
+	}
+
+}
+
+
+//COrS config:
+
+package com.eforms_url_generator.eforms_url_generator.Config;
+
+
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.web.servlet.config.annotation.CorsRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+
+@Configuration
+public class CorsConfig {
+
+    @Bean
+    public WebMvcConfigurer corsConfigurer() {
+        return new WebMvcConfigurer() {
+            @Override
+            public void addCorsMappings(CorsRegistry registry) {
+                registry.addMapping("/api/**")
+                        .allowedOrigins("http://localhost:3000")
+                        .allowedMethods("POST");
+            }
+        };
+    }
+}
+
+
+Controller:
+
+package com.eforms_url_generator.eforms_url_generator.controller;
+
+import com.eforms_url_generator.eforms_url_generator.dto.RequestDto;
+import com.eforms_url_generator.eforms_url_generator.dto.ResponseDto;
+import com.eforms_url_generator.eforms_url_generator.service.SoapTokenService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/api/v1/url-generator")
+public class UrlController {
+
+    @Autowired
+    private SoapTokenService soapTokenService;
+
+    // Endpoint to generate an auth token based on brand
+    @PostMapping("/generate-auth-token")
+    public ResponseEntity<ResponseDto> generateAuthToken(@RequestBody RequestDto request) {
+        // Extract brand from the request object
+        String brand = request.getBrand();
+
+        // Generate the token using the SoapTokenService and pass the brand name
+        String token = soapTokenService.generateToken(brand);
+
+        // Return the token in the response as ResponseDto
+        ResponseDto response = new ResponseDto(token);
+        return ResponseEntity.ok(response);
+    }
+}
+
+
+//RequestDTO
+package com.eforms_url_generator.eforms_url_generator.dto;
+
+public class RequestDto {
+
+	    private String brand; // Franchise as the brand (a, b, or c)
+
+	    // Getter and Setter
+	    public String getBrand() {
+	        return brand;
+	    }
+
+	    public void setBrand(String brand) {
+	        this.brand = brand;
+	    }
+	}
+
+
+//Responsedto
+package com.eforms_url_generator.eforms_url_generator.dto;
+
+public class ResponseDto {
+    private String authToken; // Token generated for the specific brand
+
+    // Constructor, getter, and setter
+    public ResponseDto(String authToken) {
+        this.authToken = authToken;
+    }
+
+    public String getAuthToken() {
+        return authToken;
+    }
+
+    public void setAuthToken(String authToken) {
+        this.authToken = authToken;
+    }
+}
+
+
+//TOEKN
+
+package com.eforms_url_generator.eforms_url_generator.service;
+
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.util.EntityUtils;
+import org.springframework.stereotype.Service;
+import java.security.KeyStore;
+import java.io.FileInputStream;
+import javax.net.ssl.TrustManagerFactory;
+import javax.net.ssl.SSLContext;
+
+@Service
+public class SoapTokenService {
+
+    // SOAP Service Endpoint URL
+    private static final String SOAP_SERVICE_URL = "https://www.dataaccess.com/webservicesserver/numberconversion.wso"; // Your SOAP endpoint
+
+    public String generateToken(String brand) {
+        try {
+            // Determine logic based on the brand
+            switch (brand) {
+                case "a":
+                    // Logic for brand "a"
+                    return generateTokenForBrandA();
+                case "b":
+                    // Logic for brand "b"
+                    return generateTokenForBrandB();
+                case "c":
+                    // Logic for brand "c"
+                    return generateTokenForBrandC();
+                default:
+                    // Default case (can be for unknown or fallback brand)
+                    return generateDefaultToken();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null; // Handle error
+        }
+    }
+
+    // Method for brand "a"
+    private String generateTokenForBrandA() {
+        // Logic specific to brand "a"
+        String soapRequest = createSoapRequestForBrandA();
+        return executeSoapRequest(soapRequest);
+    }
+
+    // Method for brand "b"
+    private String generateTokenForBrandB() {
+        // Logic specific to brand "b"
+        String soapRequest = createSoapRequestForBrandB();
+        return executeSoapRequest(soapRequest);
+    }
+
+    // Method for brand "c"
+    private String generateTokenForBrandC() {
+        // Logic specific to brand "c"
+        String soapRequest = createSoapRequestForBrandC();
+        return executeSoapRequest(soapRequest);
+    }
+
+    // Method for default or fallback logic
+    private String generateDefaultToken() {
+        // Default token logic, can be shared by all brands initially
+        String soapRequest = createSoapRequest();
+        return executeSoapRequest(soapRequest);
+    }
+
+    // Execute SOAP Request with the given XML
+    private String executeSoapRequest(String soapRequest) {
+        try {
+            // Load Truststore for Secure HTTPS Connection
+            KeyStore trustStore = KeyStore.getInstance(KeyStore.getDefaultType());
+            try (FileInputStream trustStoreFile = new FileInputStream("C:\\Users\\Vishal\\mockTokenServiceBinding.jks")) {
+                trustStore.load(trustStoreFile, "Vishal".toCharArray());
+            }
+
+            TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+            tmf.init(trustStore);
+            SSLContext sslContext = SSLContext.getInstance("TLS");
+            sslContext.init(null, tmf.getTrustManagers(), null);
+
+            // Create HttpClient with SSL Context and make POST request
+            CloseableHttpClient httpClient = HttpClients.custom()
+                    .setSSLContext(sslContext)
+                    .build();
+
+            HttpPost httpPost = new HttpPost(SOAP_SERVICE_URL);
+            httpPost.setHeader("Content-Type", "text/xml;charset=UTF-8");
+            httpPost.setEntity(new StringEntity(soapRequest));
+
+            // Execute request and get the response
+            HttpResponse response = httpClient.execute(httpPost);
+            String responseXml = EntityUtils.toString(response.getEntity());
+
+            // Parse the response and extract the token or value
+            return extractResultFromResponse(responseXml);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    // SoapRequest for Brand "a"
+    private String createSoapRequestForBrandA() {
+        // Define a SOAP request specific to brand "a"
+        return "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" " +
+               "xmlns:web=\"http://www.dataaccess.com/webservicesserver/\">" +
+               "<soapenv:Header/>" +
+               "<soapenv:Body>" +
+               "<web:NumberToWords>" +
+               "<web:ubiNum>123</web:ubiNum>" +
+               "</web:NumberToWords>" +
+               "</soapenv:Body>" +
+               "</soapenv:Envelope>";
+    }
+
+    // SoapRequest for Brand "b"
+    private String createSoapRequestForBrandB() {
+        // Define a SOAP request specific to brand "b"
+        return "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" " +
+               "xmlns:web=\"http://www.dataaccess.com/webservicesserver/\">" +
+               "<soapenv:Header/>" +
+               "<soapenv:Body>" +
+               "<web:NumberToWords>" +
+               "<web:ubiNum>456</web:ubiNum>" +
+               "</web:NumberToWords>" +
+               "</soapenv:Body>" +
+               "</soapenv:Envelope>";
+    }
+
+    // SoapRequest for Brand "c"
+    private String createSoapRequestForBrandC() {
+        // Define a SOAP request specific to brand "c"
+        return "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" " +
+               "xmlns:web=\"http://www.dataaccess.com/webservicesserver/\">" +
+               "<soapenv:Header/>" +
+               "<soapenv:Body>" +
+               "<web:NumberToWords>" +
+               "<web:ubiNum>789</web:ubiNum>" +
+               "</web:NumberToWords>" +
+               "</soapenv:Body>" +
+               "</soapenv:Envelope>";
+    }
+
+    // Default SOAP Request
+    private String createSoapRequest() {
+        // Generic SOAP Request that can be used as fallback for all brands
+        return "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" " +
+               "xmlns:web=\"http://www.dataaccess.com/webservicesserver/\">" +
+               "<soapenv:Header/>" +
+               "<soapenv:Body>" +
+               "<web:NumberToWords>" +
+               "<web:ubiNum>123</web:ubiNum>" +
+               "</web:NumberToWords>" +
+               "</soapenv:Body>" +
+               "</soapenv:Envelope>";
+    }
+
+    // Extract the result from SOAP Response XML
+    private String extractResultFromResponse(String responseXml) {
+        // Assuming the result is inside <NumberToWordsResult> tag in the response XML
+        String resultStartTag = "<soap:Body>";
+        String resultEndTag = "</soap:Body>";
+
+        int startIndex = responseXml.indexOf(resultStartTag) + resultStartTag.length();
+        int endIndex = responseXml.indexOf(resultEndTag);
+
+        if (startIndex != -1 && endIndex != -1) {
+            return responseXml.substring(startIndex, endIndex);
+        }
+
+        return null;
+    }
+}
+
+
+//POM
+
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>3.4.1</version>
+        <relativePath/> <!-- lookup parent from repository -->
+    </parent>
+
+    <groupId>com.eforms-url-generator</groupId>
+    <artifactId>eforms-url-generator</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
+    <name>eforms-url-generator</name>
+    <description>Eforms Link Generator</description>
+
+    <properties>
+        <java.version>17</java.version>
+    </properties>
+
+    <dependencies>
+        <!-- Spring Boot Starter Web for REST API -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+
+        <!-- Spring Boot Starter Validation (for form validation) -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-validation</artifactId>
+        </dependency>
+
+        <!-- Apache HttpClient for HTTP communication -->
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpclient</artifactId>
+            <version>4.5.13</version> <!-- Or latest version -->
+        </dependency>
+
+        <!-- Jackson for JSON serialization -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+        </dependency>
+
+        <!-- Lombok for cleaner code -->
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <optional>true</optional>
+        </dependency>
+
+        <!-- Spring Boot Starter Test (for unit testing) -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <!-- Maven Compiler Plugin for Java 17 support -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <source>17</source>
+                    <target>17</target>
+                </configuration>
+            </plugin>
+
+            <!-- Spring Boot Maven Plugin to run and package the application -->
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
+</project>
+
+
+//CONF
+
+-Djavax.net.ssl.trustStore="C:\Users\Vishal\mockTokenServiceBinding.jks" -Djavax.net.ssl.trustStorePassword=Vishal
+
